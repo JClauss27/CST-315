@@ -1,0 +1,1 @@
+My name is Joseph Clauss, and I am the creator of this code. I have successfully navigated and used Linux, and I have created, compiled, and ran the "Hello World" program inside of Linux. In order to run the "Hello World" program, simply compile it and press run.
