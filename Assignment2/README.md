@@ -1,0 +1,1 @@
+In order to run either of these scripts, simply copy and paste into a compiler. Once the code is compiled, run it and the code will perform the math and give an account balance based on deposits and withdrawals.
