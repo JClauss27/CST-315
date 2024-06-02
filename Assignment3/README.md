@@ -1,0 +1,1 @@
+In order to run this script, copy and paste it into a compiler. Once it is compiled, hit run. To stop the program, press Enter. Once you press enter, the program will finish its last execution and then stop.
