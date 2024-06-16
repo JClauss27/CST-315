@@ -1,1 +1,1 @@
-To run this file.
+To work this script, copy and paste it into a compiler and compile it. Once it's compiled, run it. In order to take advantage of the new processes and queue, use the command procs to list the current processes in queue, the ‘procs -a’ command to list the detailed information of the processes in the queue, and the ‘info ID’ to command list the ID number, command, priority and status. When finished, type 'quit' to exit the shell.
