@@ -64,6 +64,16 @@ void delete_directory(const char *path, int recursive);
 void create_file(const char *path, const char *name, int size);
 void delete_file(const char *path, const char *name);
 void list_directory(const char *path);
+void edit_file(const char *path, const char *name, const char *new_content);
+void move_file(const char *src_path, const char *file_name, const char *dest_path);
+void duplicate_file(const char *path, const char *file_name, const char *new_name);
+void duplicate_directory(const char *src_path, const char *dest_path);
+void search_file(Directory *dir, const char *file_name);
+void display_tree(Directory *dir, int level);
+void get_file_info(const char *path, const char *name);
+void get_file_detailed_info(const char *path, const char *name);
+void get_directory_info(const char *path);
+void get_directory_detailed_info(const char *path);
 
 Process *head = NULL;
 Process *tail = NULL;
@@ -241,6 +251,56 @@ void* process_command_handler(void *arg) {
                 char path[MAX_PATH_LEN];
                 sscanf(line + 3, "%s", path);
                 list_directory(path);
+            } else if (strncmp(line, "edit ", 5) == 0) {
+                char path[MAX_PATH_LEN], name[MAX_NAME_LEN], new_content[MAX_LINE];
+                sscanf(line + 5, "%s %s %s", path, name, new_content);
+                edit_file(path, name, new_content);
+            } else if (strncmp(line, "mvfile ", 7) == 0) {
+                char src_path[MAX_PATH_LEN], file_name[MAX_NAME_LEN], dest_path[MAX_PATH_LEN];
+                sscanf(line + 7, "%s %s %s", src_path, file_name, dest_path);
+                move_file(src_path, file_name, dest_path);
+            } else if (strncmp(line, "cpfile ", 7) == 0) {
+                char path[MAX_PATH_LEN], file_name[MAX_NAME_LEN], new_name[MAX_NAME_LEN];
+                sscanf(line + 7, "%s %s %s", path, file_name, new_name);
+                duplicate_file(path, file_name, new_name);
+            } else if (strncmp(line, "cpdir ", 6) == 0) {
+                char src_path[MAX_PATH_LEN], dest_path[MAX_PATH_LEN];
+                sscanf(line + 6, "%s %s", src_path, dest_path);
+                duplicate_directory(src_path, dest_path);
+            } else if (strncmp(line, "search ", 7) == 0) {
+                char path[MAX_PATH_LEN], file_name[MAX_NAME_LEN];
+                sscanf(line + 7, "%s %s", path, file_name);
+                Directory *dir = find_directory(root, path);
+                if (dir) {
+                    search_file(dir, file_name);
+                } else {
+                    printf("Directory not found: %s\n", path);
+                }
+            } else if (strncmp(line, "tree ", 5) == 0) {
+                char path[MAX_PATH_LEN];
+                sscanf(line + 5, "%s", path);
+                Directory *dir = find_directory(root, path);
+                if (dir) {
+                    display_tree(dir, 0);
+                } else {
+                    printf("Directory not found: %s\n", path);
+                }
+            } else if (strncmp(line, "fileinfo ", 9) == 0) {
+                char path[MAX_PATH_LEN], name[MAX_NAME_LEN];
+                sscanf(line + 9, "%s %s", path, name);
+                get_file_info(path, name);
+            } else if (strncmp(line, "fileinfo -d ", 12) == 0) {
+                char path[MAX_PATH_LEN], name[MAX_NAME_LEN];
+                sscanf(line + 12, "%s %s", path, name);
+                get_file_detailed_info(path, name);
+            } else if (strncmp(line, "dirinfo ", 8) == 0) {
+                char path[MAX_PATH_LEN];
+                sscanf(line + 8, "%s", path);
+                get_directory_info(path);
+            } else if (strncmp(line, "dirinfo -d ", 11) == 0) {
+                char path[MAX_PATH_LEN];
+                sscanf(line + 11, "%s", path);
+                get_directory_detailed_info(path);
             } else {
                 execute_command(line);
             }
@@ -437,6 +497,201 @@ void list_directory(const char *path) {
         printf("  Directory: %s\n", subdir->name);
         subdir = subdir->next;
     }
+}
+
+// Function to edit a file (append content)
+void edit_file(const char *path, const char *name, const char *new_content) {
+    Directory *dir = find_directory(root, path);
+    if (!dir) {
+        printf("Directory not found: %s\n", path);
+        return;
+    }
+    File *file = find_file(dir, name);
+    if (!file) {
+        printf("File not found: %s/%s\n", path, name);
+        return;
+    }
+    // Simulate editing by just displaying a message
+    printf("File edited: %s/%s, new content: %s\n", path, name, new_content);
+}
+
+// Function to move a file across directories
+void move_file(const char *src_path, const char *file_name, const char *dest_path) {
+    Directory *src_dir = find_directory(root, src_path);
+    if (!src_dir) {
+        printf("Source directory not found: %s\n", src_path);
+        return;
+    }
+    Directory *dest_dir = find_directory(root, dest_path);
+    if (!dest_dir) {
+        printf("Destination directory not found: %s\n", dest_path);
+        return;
+    }
+    File *file = find_file(src_dir, file_name);
+    if (!file) {
+        printf("File not found: %s/%s\n", src_path, file_name);
+        return;
+    }
+    // Remove file from source directory
+    if (src_dir->files == file) {
+        src_dir->files = file->next;
+    } else {
+        File *prev = src_dir->files;
+        while (prev->next && prev->next != file) {
+            prev = prev->next;
+        }
+        if (prev->next == file) {
+            prev->next = file->next;
+        }
+    }
+    // Add file to destination directory
+    file->next = dest_dir->files;
+    dest_dir->files = file;
+    snprintf(file->path, MAX_PATH_LEN, "%s/%s", dest_path, file_name);
+    printf("File moved: %s/%s to %s/%s\n", src_path, file_name, dest_path, file_name);
+}
+
+// Function to duplicate a file
+void duplicate_file(const char *path, const char *file_name, const char *new_name) {
+    Directory *dir = find_directory(root, path);
+    if (!dir) {
+        printf("Directory not found: %s\n", path);
+        return;
+    }
+    File *file = find_file(dir, file_name);
+    if (!file) {
+        printf("File not found: %s/%s\n", path, file_name);
+        return;
+    }
+    create_file(path, new_name, file->size);
+    printf("File duplicated: %s/%s to %s/%s\n", path, file_name, path, new_name);
+}
+
+// Function to duplicate a directory
+void duplicate_directory(const char *src_path, const char *dest_path) {
+    Directory *src_dir = find_directory(root, src_path);
+    if (!src_dir) {
+        printf("Source directory not found: %s\n", src_path);
+        return;
+    }
+    Directory *dest_dir = find_directory(root, dest_path);
+    if (!dest_dir) {
+        printf("Destination directory not found: %s\n", dest_path);
+        return;
+    }
+    // Recursive duplication
+    Directory *new_dir = (Directory *)malloc(sizeof(Directory));
+    strcpy(new_dir->name, src_dir->name);
+    snprintf(new_dir->path, MAX_PATH_LEN, "%s/%s", dest_path, src_dir->name);
+    new_dir->files = NULL;
+    new_dir->subdirs = dest_dir->subdirs;
+    dest_dir->subdirs = new_dir;
+    printf("Directory duplicated: %s to %s/%s\n", src_path, dest_path, src_dir->name);
+
+    File *file = src_dir->files;
+    while (file) {
+        create_file(new_dir->path, file->name, file->size);
+        file = file->next;
+    }
+    Directory *subdir = src_dir->subdirs;
+    while (subdir) {
+        char new_subdir_path[MAX_PATH_LEN];
+        snprintf(new_subdir_path, MAX_PATH_LEN, "%s/%s", new_dir->path, subdir->name);
+        duplicate_directory(subdir->path, new_subdir_path);
+        subdir = subdir->next;
+    }
+}
+
+// Function to search for a file in a directory tree
+void search_file(Directory *dir, const char *file_name) {
+    File *file = dir->files;
+    while (file) {
+        if (strcmp(file->name, file_name) == 0) {
+            printf("File found: %s/%s\n", dir->path, file->name);
+        }
+        file = file->next;
+    }
+    Directory *subdir = dir->subdirs;
+    while (subdir) {
+        search_file(subdir, file_name);
+        subdir = subdir->next;
+    }
+}
+
+// Function to display a directory tree given a starting node
+void display_tree(Directory *dir, int level) {
+    for (int i = 0; i < level; i++) {
+        printf("  ");
+    }
+    printf("%s/\n", dir->name);
+    File *file = dir->files;
+    while (file) {
+        for (int i = 0; i < level + 1; i++) {
+            printf("  ");
+        }
+        printf("%s (%d bytes)\n", file->name, file->size);
+        file = file->next;
+    }
+    Directory *subdir = dir->subdirs;
+    while (subdir) {
+        display_tree(subdir, level + 1);
+        subdir = subdir->next;
+    }
+}
+
+// Function to get basic information about a file
+void get_file_info(const char *path, const char *name) {
+    Directory *dir = find_directory(root, path);
+    if (!dir) {
+        printf("Directory not found: %s\n", path);
+        return;
+    }
+    File *file = find_file(dir, name);
+    if (!file) {
+        printf("File not found: %s/%s\n", path, name);
+        return;
+    }
+    printf("File: %s/%s\n", path, name);
+    printf("Size: %d bytes\n", file->size);
+}
+
+// Function to get detailed information about a file
+void get_file_detailed_info(const char *path, const char *name) {
+    // Basic information as well as simulated additional details
+    get_file_info(path, name);
+    printf("Created: Unknown (simulation)\n");
+    printf("Last modified: Unknown (simulation)\n");
+}
+
+// Function to get basic information about a directory
+void get_directory_info(const char *path) {
+    Directory *dir = find_directory(root, path);
+    if (!dir) {
+        printf("Directory not found: %s\n", path);
+        return;
+    }
+    printf("Directory: %s\n", dir->path);
+    printf("Subdirectories: ");
+    Directory *subdir = dir->subdirs;
+    while (subdir) {
+        printf("%s ", subdir->name);
+        subdir = subdir->next;
+    }
+    printf("\nFiles: ");
+    File *file = dir->files;
+    while (file) {
+        printf("%s ", file->name);
+        file = file->next;
+    }
+    printf("\n");
+}
+
+// Function to get detailed information about a directory
+void get_directory_detailed_info(const char *path) {
+    // Basic information as well as simulated additional details
+    get_directory_info(path);
+    printf("Created: Unknown (simulation)\n");
+    printf("Last modified: Unknown (simulation)\n");
 }
 
 int main(int argc, char *argv[]) {
