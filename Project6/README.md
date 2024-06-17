@@ -1,1 +1,1 @@
-gggg
+To work this script, copy and paste it into a compiler and compile it. Once it's compiled, run it. In order to take advantage of the file management system, use the new commands to manage new files/directories. mkdir / (dir_name) will create a new directory, touch / (file_name (bytes)) will create a new file with a certain number of bytes, ls / will show the details of the directory and the files within the directory, rm / (file_name) will remove the given file, and rmdir / (dir_name) will delete the given directory. When finished, type 'quit' to exit the shell.
