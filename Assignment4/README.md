@@ -1,0 +1,1 @@
+To run this file, copy the code and paste it into a compiler. Once it is compiled, run it. It will prompt you to insert a command, insert the command 'rm (filename)' to remove a file. This will cause the virus to start, and it will remove the incorrect file. The program will end once you enter the command.
